@@ -33,6 +33,18 @@ ol.layer.Layer = function(options) {
 
   /**
    * @private
+   * @type {{layer: ol.layer.Layer,
+   *     featuresBySelectedFeatureUid: Object.<*, ol.Feature>,
+   *     selectedFeaturesByFeatureUid: Object.<*, ol.Feature>}}
+   */
+  this.selectionData_ = {
+    featuresBySelectedFeatureUid: {},
+    layer: null,
+    selectedFeaturesByFeatureUid: {}
+  };
+
+  /**
+   * @private
    * @type {ol.source.Source}
    */
   this.source_ = options.source;
@@ -66,6 +78,16 @@ ol.layer.Layer.prototype.getLayerStatesArray = function(opt_obj) {
   obj.layers.push(this);
   obj.layerStates.push(this.getLayerState());
   return obj;
+};
+
+
+/**
+ * @return {{layer: ol.layer.Layer,
+ *     featuresBySelectedFeatureUid: Object.<*, ol.Feature>,
+ *     selectedFeaturesByFeatureUid: Object.<*, ol.Feature>}} Selection data.
+ */
+ol.layer.Layer.prototype.getSelectionData = function() {
+  return this.selectionData_;
 };
 
 
