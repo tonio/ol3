@@ -213,7 +213,7 @@ ol.interaction.Draw.prototype.startDrawing_ = function(event) {
     var sketchPoint = new ol.Feature({
       geom: new ol.geom.Point(start.slice())
     });
-    sketchPoint.renderIntent = ol.layer.VectorLayerRenderIntent.FUTURE;
+    sketchPoint.renderIntent = ol.layer.VectorLayerRenderIntent.TEMPORARY;
     this.sketchPoint_ = sketchPoint;
     features.push(sketchPoint);
 
