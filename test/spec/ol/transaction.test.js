@@ -47,7 +47,7 @@ describe('ol.Transaction', function() {
 
       var transaction = new ol.Transaction();
       transaction.handleFeatureRemove_({features: [features[0]]});
-      transaction.handleFeatureChange_({features: [features[1]]});
+      transaction.handleFeatureChange_({target: features[1]});
       transaction.handleFeatureAdd_({features: features});
 
       var inserts = values(transaction.getInserts());
@@ -70,7 +70,8 @@ describe('ol.Transaction', function() {
       var features = [new ol.Feature(), new ol.Feature()];
 
       var transaction = new ol.Transaction();
-      transaction.handleFeatureChange_({features: features});
+      transaction.handleFeatureChange_({target: features[0]});
+      transaction.handleFeatureChange_({target: features[1]});
 
       var updates = values(transaction.getUpdates());
       expect(updates).to.have.length(2);
@@ -83,7 +84,8 @@ describe('ol.Transaction', function() {
 
       var transaction = new ol.Transaction();
       transaction.handleFeatureAdd_({features: [features[0]]});
-      transaction.handleFeatureChange_({features: features});
+      transaction.handleFeatureChange_({target: features[0]});
+      transaction.handleFeatureChange_({target: features[1]});
 
       var inserts = values(transaction.getInserts());
       expect(inserts).to.have.length(1);
@@ -129,7 +131,7 @@ describe('ol.Transaction', function() {
       var features = [new ol.Feature(), new ol.Feature()];
 
       var transaction = new ol.Transaction();
-      transaction.handleFeatureChange_({features: [features[0]]});
+      transaction.handleFeatureChange_({target: features[0]});
       transaction.handleFeatureRemove_({features: features});
 
       var updates = values(transaction.getUpdates());
@@ -143,7 +145,36 @@ describe('ol.Transaction', function() {
 
   });
 
+  describe('#storeOriginal_()', function() {
+
+    it('allows an original feature to be stored', function() {
+      var features = [new ol.Feature({'foo': 'bar'})];
+      var transaction = new ol.Transaction();
+      transaction.storeOriginal_(features[0]);
+      features[0].set('geom', new ol.geom.Point([1, 2]));
+      var originals = values(transaction.originals_);
+      expect(originals.length).to.be(1);
+      expect(originals[0].get('foo')).to.be('bar');
+      expect(originals[0].get('geom')).to.be(undefined);
+    });
+
+  });
+
+  describe('#restoreOriginal_()', function() {
+
+    it('allows original attributes to be restored', function() {
+      var features = [new ol.Feature({'foo': 'bar'})];
+      var transaction = new ol.Transaction();
+      transaction.storeOriginal_(features[0]);
+      features[0].set('foo', 'baz');
+      transaction.restoreOriginal_(features[0]);
+      expect(features[0].get('foo')).to.be('bar');
+    });
+
+  });
+
 });
 
 goog.require('ol.Feature');
 goog.require('ol.Transaction');
+goog.require('ol.geom.Point');

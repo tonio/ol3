@@ -2,6 +2,9 @@ goog.provide('ol.Transaction');
 
 goog.require('goog.events');
 goog.require('goog.object');
+goog.require('ol.Feature');
+goog.require('ol.ObjectEventType');
+goog.require('ol.geom.Geometry');
 goog.require('ol.source.VectorEventType');
 
 
@@ -25,6 +28,13 @@ ol.Transaction = function() {
    * @private
    */
   this.updates_ = {};
+
+  /**
+   * Lookup for originals of modified features.
+   * @type {Object.<string, ol.Feature>}
+   * @private
+   */
+  this.originals_ = {};
 
   /**
    * Lookup for deleted features.
@@ -55,6 +65,7 @@ ol.Transaction = function() {
  */
 ol.Transaction.prototype.reset = function() {
   this.inserts_ = {};
+  this.originals = {};
   this.updates_ = {};
   this.deletes_ = {};
 };
@@ -79,20 +90,64 @@ ol.Transaction.prototype.rollback = function() {
 
   // reset all modified features
   for (id in this.updates_) {
-    this.updates_[id].restoreOriginal();
+    this.restoreOriginal_(this.updates_[id]);
   }
 
   // reload all deleted features
   features = [];
   for (id in this.deletes_) {
     feature = this.deletes_[id];
-    feature.restoreOriginal();
+    this.restoreOriginal_(this.updates_[id]);
     features.push(feature);
     source.loadFeatures(features);
   }
 
   this.reset();
   this.rollingBack_ = false;
+};
+
+
+/**
+ * Store all original feature attribute values.
+ * @param {ol.Feature} feature Feature.
+ * @private
+ */
+ol.Transaction.prototype.storeOriginal_ = function(feature) {
+  var id = goog.getUid(feature).toString();
+  if (!this.originals_.hasOwnProperty(id)) {
+    var original = new ol.Feature();
+    var attributes = feature.getAttributes();
+    var attribute;
+    for (var key in attributes) {
+      attribute = attributes[key];
+      original.set(key, attribute instanceof ol.geom.Geometry ?
+          attribute.clone() : attribute);
+    }
+    this.originals_[id] = original;
+  }
+};
+
+
+/**
+ * Reset all feature attributes to their original values.
+ * @param {ol.Feature} feature Feature.
+ * @private
+ */
+ol.Transaction.prototype.restoreOriginal_ = function(feature) {
+  var id = goog.getUid(feature).toString();
+  if (this.originals_.hasOwnProperty(id)) {
+    var original = this.originals_[id];
+    var oldValues = feature.getAttributes();
+    var newValues = original.getAttributes();
+    feature.setValues(newValues);
+    for (var key in oldValues) {
+      if (!newValues.hasOwnProperty(key)) {
+        // TODO: ol.Object.prototype.delete
+        feature.set(key, undefined);
+      }
+    }
+    delete this.originals_[id];
+  }
 };
 
 
@@ -134,21 +189,20 @@ ol.Transaction.prototype.setSource = function(source) {
   if (!goog.isNull(oldSource)) {
     goog.events.unlisten(oldSource, ol.source.VectorEventType.ADD,
         this.handleFeatureAdd_, false, this);
-    goog.events.unlisten(oldSource, ol.source.VectorEventType.CHANGE,
-        this.handleFeatureChange_, false, this);
     goog.events.unlisten(oldSource, ol.source.VectorEventType.REMOVE,
         this.handleFeatureRemove_, false, this);
+    this.stopMonitoringFeatures_(source.getFeatures());
   }
+
+  this.reset();
 
   if (source) {
     goog.events.listen(source, ol.source.VectorEventType.ADD,
         this.handleFeatureAdd_, false, this);
-    goog.events.listen(source, ol.source.VectorEventType.CHANGE,
-        this.handleFeatureChange_, false, this);
     goog.events.listen(source, ol.source.VectorEventType.REMOVE,
         this.handleFeatureRemove_, false, this);
+    this.startMonitoringFeatures_(source.getFeatures());
   }
-  this.reset();
 };
 
 
@@ -158,10 +212,21 @@ ol.Transaction.prototype.setSource = function(source) {
  * @private
  */
 ol.Transaction.prototype.handleFeatureAdd_ = function(evt) {
-  var features = evt.features;
+  this.startMonitoringFeatures_(evt.features);
+};
+
+
+/**
+ * Register change listeners on features and start monitoring them.
+ * @param {Array.<ol.Feature>} features Featuers.
+ * @private
+ */
+ol.Transaction.prototype.startMonitoringFeatures_ = function(features) {
   var feature, id;
   for (var i = 0, len = features.length; i < len; ++i) {
     feature = features[i];
+    goog.events.listen(feature, ol.ObjectEventType.BEFORECHANGE,
+        this.handleFeatureChange_, false, this);
     id = goog.getUid(feature).toString();
     this.inserts_[id] = feature;
     delete this.updates_[id];
@@ -171,21 +236,18 @@ ol.Transaction.prototype.handleFeatureAdd_ = function(evt) {
 
 
 /**
- * Handler for featurechange events.
+ * Handler for change events.
  * @param {ol.source.VectorEvent} evt The vector event (featurechange type).
  * @private
  */
 ol.Transaction.prototype.handleFeatureChange_ = function(evt) {
   if (!this.rollingBack_) {
-    var features = evt.features;
-    var feature, id;
-    for (var i = 0, len = features.length; i < len; ++i) {
-      feature = features[i];
-      id = goog.getUid(feature).toString();
-      if (!this.inserts_.hasOwnProperty(id)) {
-        this.updates_[id] = feature;
-        delete this.deletes_[id];
-      }
+    var feature = /** @type {ol.Feature} */ (evt.target);
+    var id = goog.getUid(feature).toString();
+    if (!this.inserts_.hasOwnProperty(id)) {
+      this.storeOriginal_(feature);
+      this.updates_[id] = feature;
+      delete this.deletes_[id];
     }
   }
 };
@@ -197,15 +259,27 @@ ol.Transaction.prototype.handleFeatureChange_ = function(evt) {
  * @private
  */
 ol.Transaction.prototype.handleFeatureRemove_ = function(evt) {
-  var features = evt.features;
+  this.stopMonitoringFeatures_(evt.features);
+};
+
+
+/**
+ * Unregister change listeners on features and stop monitoring them
+ * @param {Array.<ol.Feature>} features Featuers.
+ * @private
+ */
+ol.Transaction.prototype.stopMonitoringFeatures_ = function(features) {
   var feature, id;
   for (var i = 0, len = features.length; i < len; ++i) {
     feature = features[i];
+    goog.events.unlisten(feature, ol.ObjectEventType.BEFORECHANGE,
+        this.handleFeatureChange_, false, this);
     id = goog.getUid(feature).toString();
     if (this.inserts_.hasOwnProperty(id)) {
       delete this.inserts_[id];
     } else {
       this.deletes_[id] = feature;
+      delete this.originals_[id];
       delete this.updates_[id];
     }
   }
