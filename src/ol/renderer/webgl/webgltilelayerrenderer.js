@@ -108,11 +108,10 @@ ol.renderer.webgl.TileLayer.prototype.handleWebGLContextLost = function() {
  * @inheritDoc
  */
 ol.renderer.webgl.TileLayer.prototype.prepareFrame =
-    function(frameState, layerState) {
+    function(frameState, layerState, context) {
 
   var mapRenderer = this.getWebGLMapRenderer();
-  var context = mapRenderer.getContext();
-  var gl = mapRenderer.getGL();
+  var gl = context.getGL();
 
   var view2DState = frameState.view2DState;
   var projection = view2DState.projection;

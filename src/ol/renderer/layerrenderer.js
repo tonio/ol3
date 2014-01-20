@@ -8,7 +8,6 @@ goog.require('ol.Tile');
 goog.require('ol.TileRange');
 goog.require('ol.TileState');
 goog.require('ol.layer.Layer');
-goog.require('ol.layer.LayerState');
 goog.require('ol.source.Source');
 goog.require('ol.source.State');
 goog.require('ol.source.Tile');
@@ -94,13 +93,6 @@ ol.renderer.Layer.prototype.handleImageChange = function(event) {
     this.renderIfReadyAndVisible();
   }
 };
-
-
-/**
- * @param {ol.FrameState} frameState Frame state.
- * @param {ol.layer.LayerState} layerState Layer state.
- */
-ol.renderer.Layer.prototype.prepareFrame = goog.abstractMethod;
 
 
 /**

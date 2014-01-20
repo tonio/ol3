@@ -33,3 +33,10 @@ goog.inherits(ol.renderer.dom.Layer, ol.renderer.Layer);
 ol.renderer.dom.Layer.prototype.getTarget = function() {
   return this.target;
 };
+
+
+/**
+ * @param {ol.FrameState} frameState Frame state.
+ * @param {ol.layer.LayerState} layerState Layer state.
+ */
+ol.renderer.dom.Layer.prototype.prepareFrame = goog.abstractMethod;

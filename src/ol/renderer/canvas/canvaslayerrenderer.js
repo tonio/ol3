@@ -149,3 +149,10 @@ ol.renderer.canvas.Layer.prototype.getTransform = function(frameState) {
       -view2DState.rotation,
       -view2DState.center[0], -view2DState.center[1]);
 };
+
+
+/**
+ * @param {ol.FrameState} frameState Frame state.
+ * @param {ol.layer.LayerState} layerState Layer state.
+ */
+ol.renderer.canvas.Layer.prototype.prepareFrame = goog.abstractMethod;
