@@ -102,14 +102,15 @@ ol.renderer.webgl.VectorLayer.prototype.composeFrame =
 
   var replayGroup = this.replayGroup_;
   if (!goog.isNull(replayGroup) && !replayGroup.isEmpty()) {
-    var renderGeometryFunction = this.getRenderGeometryFunction_();
-    goog.asserts.assert(goog.isFunction(renderGeometryFunction));
+    // var renderGeometryFunction = this.getRenderGeometryFunction_();
+    // goog.asserts.assert(goog.isFunction(renderGeometryFunction));
+    var skippedFeatureIds = this.getLayer().getSkippedFeatures();
     replayGroup.replay(context,
         this.locations_.a_position,
         this.locations_.u_projectionMatrix,
         frameState.extent, frameState.pixelRatio,
         this.projectionMatrix,
-        renderGeometryFunction);
+        skippedFeatureIds);
   }
 
 };

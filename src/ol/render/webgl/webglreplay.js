@@ -35,6 +35,12 @@ ol.render.webgl.Replay = function(tolerance) {
    */
   this.extent_ = ol.extent.createEmpty();
 
+  /**
+   * @private
+   * @type {object}
+   */
+  this.coordinatesIndexes_ = {};
+
 };
 
 
@@ -45,11 +51,12 @@ ol.render.webgl.Replay = function(tolerance) {
  * @param {number} stride Stride.
  * @param {boolean} close Close.
  * @protected
- * @return {number} My end.
+ * @return {Array.<number>} Coordinates indexes
  */
 ol.render.webgl.Replay.prototype.appendFlatCoordinates =
     function(flatCoordinates, offset, end, stride, close) {
   var myEnd = this.coordinates.length;
+      myStart = myEnd;
   var i;
   for (i = offset; i < end; i += stride) {
     this.coordinates[myEnd++] = flatCoordinates[i];
@@ -59,7 +66,7 @@ ol.render.webgl.Replay.prototype.appendFlatCoordinates =
     this.coordinates[myEnd++] = flatCoordinates[offset];
     this.coordinates[myEnd++] = flatCoordinates[offset + 1];
   }
-  return myEnd;
+  return [myStart, myEnd - 1];
 };
 
 
@@ -76,14 +83,14 @@ ol.render.webgl.Replay.prototype.finish = goog.nullFunction;
  *     matrix location.
  * @param {number} pixelRatio Pixel ratio.
  * @param {goog.vec.Mat4.Number} transform Transform.
- * @param {function(ol.geom.Geometry): boolean} renderGeometryFunction Render
+ * @param {Array.<number>} skippedFeatureIds Skipped features ids
  *     geometry function.
  * @return {T|undefined} Callback result.
  * @template T
  */
 ol.render.webgl.Replay.prototype.replay =
     function(context, attribLocation, projectionMatrixLocation,
-        pixelRatio, transform, renderGeometryFunction) {
+        pixelRatio, transform, skippedFeatureIds) {
   var gl = context.getGL();
   gl.bindBuffer(goog.webgl.ARRAY_BUFFER, this.buffer);
   gl.uniformMatrix4fv(projectionMatrixLocation, false,
@@ -91,7 +98,19 @@ ol.render.webgl.Replay.prototype.replay =
   gl.enableVertexAttribArray(attribLocation);
   gl.vertexAttribPointer(attribLocation, 2, goog.webgl.FLOAT,
       false, 0, 0);
-  gl.drawArrays(goog.webgl.POINTS, 0, this.coordinates.length / 2);
+  var current = 0,
+      i, ii;
+  for (i = 0, ii = skippedFeatureIds.length; i < ii; i++) {
+    var uid = skippedFeatureIds[i];
+    var indexes = this.coordinatesIndexes_[uid];
+    if (indexes[0] > 0) {
+      gl.drawArrays(goog.webgl.POINTS, current/2, (indexes[0] - current) / 2);
+    }
+    current = indexes[1] + 1;
+  }
+  if (current < this.coordinates.length) {
+    gl.drawArrays(goog.webgl.POINTS, current / 2, (this.coordinates.length - current) / 2);
+  }
 };
 
 
@@ -221,7 +240,8 @@ ol.render.webgl.ImageReplay.prototype.drawPointGeometry =
   ol.extent.extend(this.extent_, pointGeometry.getExtent());
   var flatCoordinates = pointGeometry.getFlatCoordinates();
   var stride = pointGeometry.getStride();
-  this.drawCoordinates_(
+  var uid = goog.getUid(data);
+  this.coordinatesIndexes_[uid] = this.drawCoordinates_(
       flatCoordinates, 0, flatCoordinates.length, stride);
 };
 
@@ -234,7 +254,8 @@ ol.render.webgl.ImageReplay.prototype.drawMultiPointGeometry =
   ol.extent.extend(this.extent_, multiPointGeometry.getExtent());
   var flatCoordinates = multiPointGeometry.getFlatCoordinates();
   var stride = multiPointGeometry.getStride();
-  this.drawCoordinates_(
+  var uid = goog.getUid(data);
+  this.coordinatesIndexes_[uid] = this.drawCoordinates_(
       flatCoordinates, 0, flatCoordinates.length, stride);
 };
 

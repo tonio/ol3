@@ -49,6 +49,8 @@ ol.layer.Vector = function(opt_options) {
     this.setStyle(options.style);
   }
 
+  this.skippedFeatureIds_ = [];
+
 };
 goog.inherits(ol.layer.Vector, ol.layer.Layer);
 
@@ -116,4 +118,29 @@ ol.layer.Vector.prototype.setStyle = function(style) {
   this.style_ = style;
   this.styleFunction_ = ol.feature.createStyleFunction(style);
   this.dispatchChangeEvent();
+};
+
+
+/**
+ * FIXME empty doc
+ * @param {ol.Feature} feature A feature to skip
+ * @todo stability experimental
+ */
+ol.layer.Vector.prototype.skipFeature = function(feature) {
+  var uid = goog.getUid(feature);
+  if (!goog.array.contains(this.skippedFeatureIds_, uid)) {
+    this.skippedFeatureIds_.push(goog.getUid(feature));
+    this.skippedFeatureIds_.sort();
+    this.dispatchChangeEvent();
+  }
+};
+
+
+/**
+ * FIXME empty doc
+ * @return {Array.<number>} Array of uids
+ * @todo stability experimental
+ */
+ol.layer.Vector.prototype.getSkippedFeatures = function() {
+  return this.skippedFeatureIds_;
 };

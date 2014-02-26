@@ -21,7 +21,7 @@ goog.addSingletonGetter(ol.renderer.webgl.vectorlayer.shader.Fragment);
  * @const
  * @type {string}
  */
-ol.renderer.webgl.vectorlayer.shader.Fragment.DEBUG_SOURCE = 'precision mediump float;\n\n\n\nvoid main(void) {\n  gl_FragColor = vec4(1.0, 1.0, 0.0, 0.7);\n}\n';
+ol.renderer.webgl.vectorlayer.shader.Fragment.DEBUG_SOURCE = 'precision mediump float;\n\n\n\nvoid main(void) {\n  gl_FragColor = vec4(1.0, 0.0, 0.0, 0.7);\n}\n';
 
 
 /**

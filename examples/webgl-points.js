@@ -3,8 +3,8 @@ goog.require('ol.Map');
 goog.require('ol.View2D');
 goog.require('ol.layer.Tile');
 goog.require('ol.layer.Vector');
-goog.require('ol.source.BingMaps');
-goog.require('ol.source.TWKB');
+goog.require('ol.source.OSM');
+goog.require('ol.source.GeoJSON');
 goog.require('ol.style.Circle');
 goog.require('ol.style.Fill');
 goog.require('ol.style.Stroke');
@@ -19,25 +19,68 @@ var style = new ol.style.Style({
   })
 });
 
-var vectorSource = new ol.source.TWKB({
-  url: 'data/cell-towers-multipoint-100K.twkb'
-});
-
 var vectorLayer = new ol.layer.Vector({
-  source: vectorSource,
-  style: style
+  style: style,
+  source: new ol.source.GeoJSON({
+      object: {
+        'type': 'FeatureCollection',
+        'crs': {
+          'type': 'name',
+          'properties': {
+            'name': 'EPSG:3857'
+          }
+        },
+        'features': [
+          {
+            'type': 'Feature',
+            'geometry': {
+              'type': 'Point',
+              'coordinates': [0, 0]
+            }
+          },
+          {
+            'type': 'Feature',
+            'geometry': {
+              'type': 'Point',
+              'coordinates': [1e6, 0]
+            }
+          },
+          {
+            'type': 'Feature',
+            'geometry': {
+              'type': 'MultiPoint',
+              'coordinates': [ [-2e6, -2e6], [0, -2e6], [2e6, -2e6]]
+            }
+          },
+          {
+            'type': 'Feature',
+            'geometry': {
+              'type': 'Point',
+              'coordinates': [-1e6, 0]
+            }
+          },
+          {
+            'type': 'Feature',
+            'geometry': {
+              'type': 'Point',
+              'coordinates': [0, -1e6]
+            }
+          },
+          {
+            'type': 'Feature',
+            'geometry': {
+              'type': 'Point',
+              'coordinates': [0, 1e6]
+            }
+          }
+          ]}})
 });
 
 if (ol.BrowserFeature.HAS_WEBGL) {
-  var key =
-      'Ak-dzM4wZjSqTlzveKz5u0d4IQ4bRzVI309GxmkgSVr1ewS6iPSrOvOKhA-CJlm3';
   var map = new ol.Map({
     layers: [
       new ol.layer.Tile({
-        source: new ol.source.BingMaps({
-          key: key,
-          imagerySet: 'Aerial'
-        })
+        source: new ol.source.OSM()
       }),
       vectorLayer
     ],
