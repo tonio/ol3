@@ -97,6 +97,7 @@ ol.renderer.canvas.VectorLayer.prototype.composeFrame =
     replayGroup.replay(
         replayContext, frameState.extent, frameState.pixelRatio, transform,
         frameState.viewState.rotation, frameState.skippedFeatureUids_);
+    replayContext.globalAlpha = 1;
 
     if (replayContext != context) {
       this.dispatchRenderEvent(replayContext, frameState, transform);

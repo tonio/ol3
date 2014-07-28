@@ -67,6 +67,7 @@ ol.renderer.canvas.Layer.prototype.composeFrame =
       context.drawImage(image, 0, 0);
       context.setTransform(1, 0, 0, 1, 0, 0);
     }
+    context.globalAlpha = 1;
   }
 
   this.dispatchPostComposeEvent(context, frameState);
