@@ -1742,7 +1742,7 @@ olx.format.WFSWriteGetFeatureOptions.prototype.geometryName;
 
 /**
  * GML format to use within the WFS format.
- * @type {ol.format.GML|undefined}
+ * @type {ol.format.GMLBase|undefined}
  * @api
  */
 olx.format.WFSWriteGetFeatureOptions.prototype.gmlFormat;
