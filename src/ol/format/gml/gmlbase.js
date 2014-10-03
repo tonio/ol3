@@ -169,8 +169,11 @@ ol.format.GMLBase.prototype.readFeatureElement = function(node, objectStack) {
       }
       values[ol.xml.getLocalName(n)] = value;
     } else {
-      geometryName = ol.xml.getLocalName(n);
-      values[geometryName] = this.readGeometryElement(n, objectStack);
+      // boundedBy is an extent and must not be considered as a geometry
+      if (n.localName !== 'boundedBy') {
+        geometryName = ol.xml.getLocalName(n);
+      }
+      values[ol.xml.getLocalName(n)] = this.readGeometryElement(n, objectStack);
     }
   }
   var feature = new ol.Feature(values);
